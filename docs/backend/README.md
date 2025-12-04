@@ -200,17 +200,38 @@ Returns service health status.
 
 **GET** `/suggestions`
 
-Fetches all records from the `suggestions` table.
+Returns the latest station cards by joining `stations` with the most recent `station_status` snapshot. Each item surfaces inventory plus an urgency label derived from `available / capacity`.
+
+**Classification rules (ratio = `available / capacity`):**
+- `capacity <= 0` → `status="balanced"`, `type="null"`
+- `ratio ≤ 0.10` → `status="critical"`, `type="empty"`
+- `ratio ≥ 0.90` → `status="critical"`, `type="full"`
+- `ratio ≤ 0.20` → `status="warning"`, `type="empty"`
+- `ratio ≥ 0.80` → `status="warning"`, `type="full"`
+- Otherwise → `status="balanced"`, `type="null"`
 
 **Response:** `200 OK`
 ```json
 [
   {
-    "id": 1,
-    "from_station_id": 100,
-    "to_station_id": 200,
-    "qty": 5,
-    "reason": "Station 100 is full, Station 200 needs bikes"
+    "id": "st_01",
+    "name": "Market & 8th",
+    "lat": 37.7766,
+    "lng": -122.4169,
+    "capacity": 27,
+    "available": 1,
+    "status": "critical",
+    "type": "empty"
+  },
+  {
+    "id": "st_02",
+    "name": "2nd & Harrison",
+    "lat": 37.7838,
+    "lng": -122.3926,
+    "capacity": 21,
+    "available": 10,
+    "status": "balanced",
+    "type": "null"
   }
 ]
 ```

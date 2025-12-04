@@ -25,8 +25,8 @@ class Suggestion(Base):
 
 
 class Task(Base):
-    """SQLAlchemy model for tasks table"""
-    __tablename__ = "tasks"
+    """SQLAlchemy model for backend task queue table"""
+    __tablename__ = "backend_tasks"
 
     id = Column(Integer, primary_key=True, index=True)
     from_station_id = Column(Integer, nullable=False)

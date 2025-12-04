@@ -35,26 +35,59 @@ Check if the service is running.
 
 **GET** `/suggestions`
 
-Retrieve all suggestions from the database.
+Retrieve the latest station suggestion cards by joining `stations` with the freshest `station_status` snapshot. Each object surfaces a station’s inventory plus urgency classification.
 
 **Response:** `200 OK`
 
-**Response Schema:**
+**Fields (`SuggestionResponse`):**
+- `id`: Station identifier (matches `stations.station_id`)
+- `name`: Human-readable station name
+- `lat` / `lng`: Station coordinates
+- `capacity`: Total docks at the station (0 if unknown)
+- `available`: Latest `num_bikes_available` value (0 if no snapshot yet)
+- `status`: `"critical" | "warning" | "balanced"`
+- `type`: `"empty" | "full" | "null"`
+
+**Status/Type rules (ratio = `available / capacity`):**
+- `capacity <= 0` → `status="balanced"`, `type="null"`
+- `ratio ≤ 0.10` → `status="critical"`, `type="empty"`
+- `ratio ≥ 0.90` → `status="critical"`, `type="full"`
+- `ratio ≤ 0.20` → `status="warning"`, `type="empty"`
+- `ratio ≥ 0.80` → `status="warning"`, `type="full"`
+- Otherwise → `status="balanced"`, `type="null"`
+
+**Response Example:**
 ```json
 [
   {
-    "id": 1,
-    "from_station_id": 100,
-    "to_station_id": 200,
-    "qty": 5,
-    "reason": "Station 100 is full, Station 200 needs bikes"
+    "id": "st_01",
+    "name": "Market & 8th",
+    "lat": 37.7766,
+    "lng": -122.4169,
+    "capacity": 27,
+    "available": 1,
+    "status": "critical",
+    "type": "empty"
   },
   {
-    "id": 2,
-    "from_station_id": 150,
-    "to_station_id": 250,
-    "qty": 3,
-    "reason": "High demand at Station 250"
+    "id": "st_02",
+    "name": "2nd & Harrison",
+    "lat": 37.7838,
+    "lng": -122.3926,
+    "capacity": 21,
+    "available": 10,
+    "status": "balanced",
+    "type": "null"
+  },
+  {
+    "id": "st_03",
+    "name": "Civic Center",
+    "lat": 37.7793,
+    "lng": -122.4192,
+    "capacity": 31,
+    "available": 25,
+    "status": "warning",
+    "type": "full"
   }
 ]
 ```
@@ -229,20 +262,25 @@ curl -X POST http://localhost:8000/task/456/complete
 
 ```json
 {
-  "id": 1,
-  "from_station_id": 100,
-  "to_station_id": 200,
-  "qty": 5,
-  "reason": "Station 100 is full, Station 200 needs bikes"
+  "id": "st_01",
+  "name": "Market & 8th",
+  "lat": 37.7766,
+  "lng": -122.4169,
+  "capacity": 27,
+  "available": 1,
+  "status": "critical",
+  "type": "empty"
 }
 ```
 
 **Fields:**
-- `id` (integer): Suggestion ID
-- `from_station_id` (integer): Source station ID
-- `to_station_id` (integer): Destination station ID
-- `qty` (integer): Number of bikes to move
-- `reason` (string): Explanation for the suggestion
+- `id` (string): Station identifier (`stations.station_id`)
+- `name` (string): Station display name
+- `lat` / `lng` (numbers): Coordinates
+- `capacity` (integer): Dock count (0 if missing)
+- `available` (integer): Bikes available (0 if missing)
+- `status` (string): `"critical" | "warning" | "balanced"`
+- `type` (string): `"empty" | "full" | "null"`
 
 ---
 

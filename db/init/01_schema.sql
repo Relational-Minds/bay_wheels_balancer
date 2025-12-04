@@ -37,7 +37,17 @@ CREATE INDEX IF NOT EXISTS idx_trips_started_at ON trips(started_at);
 CREATE INDEX IF NOT EXISTS idx_trips_end_station ON trips(end_station_id);
 CREATE INDEX IF NOT EXISTS idx_trips_start_station ON trips(start_station_id);
 
--- (Optional) Rebalancing tasks scaffolding so backend can plug in later
+-- Backend suggestions table used by the orchestration API
+CREATE TABLE IF NOT EXISTS suggestions (
+  id              SERIAL PRIMARY KEY,
+  from_station_id INT    NOT NULL,
+  to_station_id   INT    NOT NULL,
+  qty             INT    NOT NULL,
+  reason          TEXT   NOT NULL,
+  created_at      TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- (Optional) Rebalancing tasks scaffolding for analytics
 CREATE TABLE IF NOT EXISTS tasks (
   task_id BIGSERIAL PRIMARY KEY,
   src_station_id TEXT,
@@ -45,6 +55,18 @@ CREATE TABLE IF NOT EXISTS tasks (
   quantity INT CHECK (quantity >= 0),
   status TEXT DEFAULT 'pending', -- pending | assigned | completed | canceled
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Backend task queue table used by the orchestration API
+CREATE TABLE IF NOT EXISTS backend_tasks (
+  id              SERIAL PRIMARY KEY,
+  from_station_id INT       NOT NULL,
+  to_station_id   INT       NOT NULL,
+  qty             INT       NOT NULL,
+  reason          TEXT,
+  status          TEXT      NOT NULL DEFAULT 'ready', -- ready | assigned | completed
+  worker_id       TEXT,
+  created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS assignments (

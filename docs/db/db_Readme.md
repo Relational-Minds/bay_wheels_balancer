@@ -127,6 +127,49 @@ Calculates station urgency score based on latest status.
 ```sql
 CASE WHEN bikes <= 2 THEN 70 ELSE 0 END +
 CASE WHEN docks <= 2 THEN 30 ELSE 0 END
+```
 
-[Helper Function](db_helper_function.md)
+---
+
+# 🧩 Backend-Orchestration Tables (SQLAlchemy)
+
+In addition to the warehouse-style tables above (created in `db/init/01_schema.sql`),  
+the **backend service** uses SQLAlchemy models to create and manage its own tables:
+
+## 8. `suggestions` (backend)
+
+Created by `app.db.models.Suggestion`:
+
+| Column            | Type       | Description                         |
+|-------------------|------------|-------------------------------------|
+| `id`              | INTEGER PK | Auto-incrementing primary key       |
+| `from_station_id` | INTEGER    | Source station ID                   |
+| `to_station_id`   | INTEGER    | Destination station ID              |
+| `qty`             | INTEGER    | Number of bikes to move             |
+| `reason`          | TEXT       | Explanation for the suggestion      |
+| `created_at`      | TIMESTAMP  | Record creation time (UTC)          |
+
+**Usage:** Temporary storage for ML-generated rebalancing suggestions.  
+Suggestions are converted into backend tasks and then deleted.
+
+## 9. `backend_tasks` (backend)
+
+Created by `app.db.models.Task` (not the same shape as the ETL `tasks` table above):
+
+| Column            | Type       | Description                                  |
+|-------------------|------------|----------------------------------------------|
+| `id`              | INTEGER PK | Auto-incrementing primary key                |
+| `from_station_id` | INTEGER    | Source station ID                            |
+| `to_station_id`   | INTEGER    | Destination station ID                       |
+| `qty`             | INTEGER    | Number of bikes to move                      |
+| `reason`          | TEXT NULL  | Optional explanation                         |
+| `status`          | ENUM       | `ready`, `assigned`, `completed`             |
+| `worker_id`       | TEXT NULL  | Assigned worker identifier                   |
+| `created_at`      | TIMESTAMP  | Task creation time (UTC)                     |
+
+**Note:**  
+- The **warehouse `tasks` table** documented earlier (`task_id`, `src_station_id`, `dst_station_id`, `quantity`, `status`, `created_at`) comes from `01_schema.sql` and is used for analytics/ETL.  
+- The **backend `backend_tasks` table** above is created/managed by SQLAlchemy and is what the FastAPI routes (`/task/approve`, `/dispatch/next`, `/task/{id}/complete`) interact with.
+
+[Helper Function](db_helper_function.md)  
 [Data Flow](db_data_flow.md)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,14 +14,81 @@ from app.schemas import (
 router = APIRouter()
 
 
+STATUS_CRITICAL_EMPTY_THRESHOLD = 0.10
+STATUS_WARNING_EMPTY_THRESHOLD = 0.20
+STATUS_CRITICAL_FULL_THRESHOLD = 0.90
+STATUS_WARNING_FULL_THRESHOLD = 0.80
+
+
+def _derive_status_and_type(capacity: int | None, available: int | None) -> tuple[str, str]:
+    """Classify station based on available bikes vs capacity."""
+    capacity = capacity or 0
+    available = available or 0
+
+    if capacity <= 0:
+        return "balanced", "null"
+
+    ratio = available / capacity
+
+    if ratio <= STATUS_CRITICAL_EMPTY_THRESHOLD:
+        return "critical", "empty"
+    if ratio >= STATUS_CRITICAL_FULL_THRESHOLD:
+        return "critical", "full"
+    if ratio <= STATUS_WARNING_EMPTY_THRESHOLD:
+        return "warning", "empty"
+    if ratio >= STATUS_WARNING_FULL_THRESHOLD:
+        return "warning", "full"
+
+    return "balanced", "null"
+
+
 @router.get("/suggestions", response_model=list[SuggestionResponse])
 async def get_suggestions(db: Session = Depends(get_db)):
     """
-    Fetch all records from the suggestions table.
+    Return station status cards computed from stations + latest station_status snapshot.
     """
     try:
-        suggestions = db.query(Suggestion).all()
-        return [SuggestionResponse.model_validate(s) for s in suggestions]
+        stmt = text(
+            """
+            WITH latest_status AS (
+                SELECT DISTINCT ON (station_id)
+                       station_id,
+                       num_bikes_available,
+                       ts
+                FROM station_status
+                ORDER BY station_id, ts DESC
+            )
+            SELECT
+                s.station_id AS id,
+                s.name,
+                s.lat,
+                s.lon AS lng,
+                COALESCE(s.capacity, 0) AS capacity,
+                COALESCE(ls.num_bikes_available, 0) AS available
+            FROM stations s
+            LEFT JOIN latest_status ls
+                   ON ls.station_id = s.station_id
+            ORDER BY s.station_id;
+            """
+        )
+        result = db.execute(stmt).mappings().all()
+
+        suggestions = []
+        for row in result:
+            status, type_ = _derive_status_and_type(row["capacity"], row["available"])
+            payload = {
+                "id": str(row["id"]),
+                "name": row["name"],
+                "lat": row["lat"],
+                "lng": row["lng"],
+                "capacity": row["capacity"] or 0,
+                "available": row["available"] or 0,
+                "status": status,
+                "type": type_,
+            }
+            suggestions.append(SuggestionResponse.model_validate(payload))
+
+        return suggestions
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching suggestions: {str(e)}")
 

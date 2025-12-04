@@ -11,13 +11,30 @@ class TaskStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class StationStatus(str, Enum):
+    """High-level station urgency tier"""
+    CRITICAL = "critical"
+    WARNING = "warning"
+    BALANCED = "balanced"
+
+
+class StationStateType(str, Enum):
+    """Whether the station is empty/full/null"""
+    EMPTY = "empty"
+    NULL = "null"
+    FULL = "full"
+
+
 class SuggestionResponse(BaseModel):
-    """Response schema for a suggestion"""
-    id: int
-    from_station_id: int
-    to_station_id: int
-    qty: int
-    reason: str
+    """Response schema for a station suggestion card"""
+    id: str
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+    available: int
+    status: StationStatus
+    type: StationStateType
 
     model_config = {"from_attributes": True}
 
