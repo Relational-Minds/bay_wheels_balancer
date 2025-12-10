@@ -4,7 +4,7 @@ Configuration: uses `.env` or environment variables. No CLI args.
 
 Env vars supported:
 - `DATABASE_URL` (optional) or POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_HOST/DB_PORT/POSTGRES_DB
-- `STATION_CSV_PATH`: path to CSV file to read stations from (default: 'data/sample.csv')
+- `STATION_CSV_PATH`: path to CSV file to read stations from (default: 'db/data/sample.csv')
 
 This script extracts all distinct (start_station_id, start_station_name) and (end_station_id, end_station_name)
 pairs from the CSV and upserts them into the `station` table.
@@ -123,7 +123,7 @@ def main():
     engine = create_engine(db_url)
     
     # Get CSV path from env (default to sample.csv)
-    csv_path = os.environ.get('STATION_CSV_PATH', 'data/202509-baywheels-tripdata.csv')
+    csv_path = os.environ.get('STATION_CSV_PATH', 'db/data/202509-baywheels-tripdata.csv')
     
     # Extract stations from CSV
     stations = extract_stations_from_csv(csv_path)

@@ -1,0 +1,481 @@
+═══════════════════════════════════════════════════════════════════════
+                    BAY WHEELS SYSTEM VERIFICATION                      
+═══════════════════════════════════════════════════════════════════════
+
+Timing is on.
+Expanded display is used automatically.
+
+───────────────────────────────────────────────────────────────────────
+1. DATABASE OVERVIEW
+───────────────────────────────────────────────────────────────────────
+
+    metric     | value  
+---------------+--------
+ Database Size | 121 MB
+(1 row)
+
+Time: 2.450 ms
+
+Table Row Counts:
+ schemaname |         relname         | Total Inserts | Total Updates | Total Deletes | Live Rows 
+------------+-------------------------+---------------+---------------+---------------+-----------
+ public     | trip_history            |        426899 |             0 |             0 |    426899
+ public     | station_15min_demand    |        185788 |             0 |             0 |    185788
+ public     | spatial_ref_sys         |          8500 |             0 |             0 |      8500
+ public     | station                 |           595 |           594 |             0 |       595
+ public     | forecast_station_status |             6 |             0 |             0 |         6
+ public     | station_inventory       |             6 |             0 |             0 |         6
+ public     | rebalancing_jobs        |             8 |             0 |             0 |         3
+ public     | suggestion_candidates   |             0 |             0 |             0 |         0
+(8 rows)
+
+Time: 4.443 ms
+
+───────────────────────────────────────────────────────────────────────
+2. DATA INTEGRITY CHECKS
+───────────────────────────────────────────────────────────────────────
+
+Check 1: Verify all stations have valid geometry
+ total_stations | stations_with_geometry | missing_geometry | status 
+----------------+------------------------+------------------+--------
+            595 |                    595 |                0 | ✓ PASS
+(1 row)
+
+Time: 0.616 ms
+
+Check 2: Verify all trips reference valid stations
+ total_trips | null_start_stations | null_end_stations | status 
+-------------+---------------------+-------------------+--------
+      426899 |                   0 |                 0 | ✓ PASS
+(1 row)
+
+Time: 28.279 ms
+
+Check 3: Verify trip timestamps are valid (started_at < ended_at)
+ total_trips | invalid_timestamps | status 
+-------------+--------------------+--------
+      426899 |                  0 | ✓ PASS
+(1 row)
+
+Time: 20.272 ms
+
+Check 4: Verify station inventory within capacity bounds
+ total_stations | over_capacity | negative_bikes | status 
+----------------+---------------+----------------+--------
+              6 |             0 |              0 | ✓ PASS
+(1 row)
+
+Time: 0.529 ms
+
+Check 5: Verify forecast predictions within valid range [0, capacity]
+ total_forecasts | exceeds_capacity | negative_predictions | status 
+-----------------+------------------+----------------------+--------
+               6 |                0 |                    0 | ✓ PASS
+(1 row)
+
+Time: 0.623 ms
+
+Check 6: Verify no orphaned demand records (stations must exist)
+ total_demand_records | orphaned_records | status 
+----------------------+------------------+--------
+               185788 |                0 | ✓ PASS
+(1 row)
+
+Time: 16.590 ms
+
+───────────────────────────────────────────────────────────────────────
+3. SAMPLE DATA OUTPUTS
+───────────────────────────────────────────────────────────────────────
+
+Sample Stations with Geometry:
+ station_id |         station_name         |      longitude      |      latitude      
+------------+------------------------------+---------------------+--------------------
+ L1.4       | Stowe Lake                   |        -122.4771164 |        37.77093751
+ SF-J30     | 3rd St at King St            |         -122.391414 |          37.777899
+ L1.20      | South Lake                   |        -122.5004981 |        37.76486899
+ BK-C6      | MLK Jr Way at University Ave |        -122.2730677 |         37.8717192
+ BK-E8      | Fulton St at Bancroft Way    | -122.26593686946156 | 37.868135281599706
+(5 rows)
+
+Time: 11.997 ms
+
+Sample Trip History:
+     ride_id      | start_station_id | end_station_id |       started_at        |        ended_at         |  duration_minutes  | rideable_type | member_casual 
+------------------+------------------+----------------+-------------------------+-------------------------+--------------------+---------------+---------------
+ 0F5E716D2F7757DE | SJ-M10-2         | SJ-N11         | 2025-09-30 23:52:34.366 | 2025-09-30 23:55:26.695 | 2.8721500000000000 | electric_bike | member
+ F98A24BE72044AEC | SF-M30-3         | SF-O30-2       | 2025-09-30 23:52:08.146 | 2025-09-30 23:56:09.714 | 4.0261333333333333 | classic_bike  | casual
+ DC6D781298AA1FEA | SF-F19           | SF-E18         | 2025-09-30 23:51:36.655 | 2025-09-30 23:53:55.025 | 2.3061666666666667 | electric_bike | member
+ EEFEA544787709CA | SF-J24           | SF-P26         | 2025-09-30 23:49:41.33  | 2025-09-30 23:59:20.404 | 9.6512333333333333 | electric_bike | member
+ 5EDB6B0127527DD9 | SF-D27           | SF-F28-2       | 2025-09-30 23:49:34.206 | 2025-09-30 23:51:34.107 | 1.9983500000000000 | electric_bike | member
+(5 rows)
+
+Time: 0.436 ms
+
+Sample Station Inventory:
+ station_id |         station_name         | current_bikes | capacity | fill_percentage |    last_reported    
+------------+------------------------------+---------------+----------+-----------------+---------------------
+ EM-C3      | 47th St at San Pablo Ave     |            22 |       25 |            88.0 | 2025-12-04 07:45:00
+ BK-G10     | Russell St at College Ave    |            19 |       24 |            79.2 | 2025-12-04 07:45:00
+ BK-E8      | Fulton St at Bancroft Way    |            16 |       25 |            64.0 | 2025-12-04 07:45:00
+ BK-C6      | MLK Jr Way at University Ave |             8 |       20 |            40.0 | 2025-12-04 07:45:00
+ OK-A4      | 62nd St at Claremont Ave     |             5 |       20 |            25.0 | 2025-12-04 07:45:00
+(5 rows)
+
+Time: 0.371 ms
+
+Sample 15-Min Demand Patterns (Peak Hours):
+ station_id | day_name | time_slot | avg_arrivals | avg_departures | avg_net_flow 
+------------+----------+-----------+--------------+----------------+--------------
+ BK-A7      | Sunday   | 8:45      |         0.00 |           1.00 |        -1.00
+ BK-A7      | Sunday   | 9:0       |         0.00 |           2.00 |        -2.00
+ BK-A7      | Sunday   | 9:15      |         1.00 |           0.00 |         1.00
+ BK-A7      | Sunday   | 9:30      |         0.00 |           3.00 |        -3.00
+ BK-A7      | Monday   | 7:0       |         0.00 |           1.00 |        -1.00
+ BK-A7      | Monday   | 7:15      |         0.00 |           1.00 |        -1.00
+ BK-A7      | Monday   | 7:30      |         0.00 |           1.00 |        -1.00
+ BK-A7      | Monday   | 7:45      |         0.00 |           1.00 |        -1.00
+ BK-A7      | Monday   | 8:0       |         0.00 |           1.00 |        -1.00
+ BK-A7      | Monday   | 8:15      |         0.00 |           2.00 |        -2.00
+(10 rows)
+
+Time: 0.447 ms
+
+Sample Forecasts:
+ station_id |         station_name         |     forecast_ts     | current | predicted | change | risk_status 
+------------+------------------------------+---------------------+---------+-----------+--------+-------------
+ BK-C6      | MLK Jr Way at University Ave | 2025-12-04 07:45:00 |       8 |        10 |      2 | balanced
+ BK-E8      | Fulton St at Bancroft Way    | 2025-12-04 07:45:00 |      16 |        16 |      0 | balanced
+ OK-E3      | 45th St at MLK Jr Way        | 2025-12-04 07:45:00 |       3 |         2 |     -1 | empty_soon
+ EM-C3      | 47th St at San Pablo Ave     | 2025-12-04 07:45:00 |      22 |        22 |      0 | full_soon
+ OK-A4      | 62nd St at Claremont Ave     | 2025-12-04 07:45:00 |       5 |         4 |     -1 | balanced
+ BK-G10     | Russell St at College Ave    | 2025-12-04 07:45:00 |      19 |        14 |     -5 | balanced
+(6 rows)
+
+Time: 0.458 ms
+
+Sample Rebalancing Jobs:
+psql:db/sql/verify_system.sql:223: ERROR:  column rj.priority does not exist
+LINE 7:     rj.priority,
+            ^
+Time: 0.246 ms
+
+───────────────────────────────────────────────────────────────────────
+4. ANALYTICAL QUERIES
+───────────────────────────────────────────────────────────────────────
+
+Top 5 Busiest Stations (by total trips):
+ station_id |                 station_name                 | total_trips 
+------------+----------------------------------------------+-------------
+ SF-J29     | San Francisco Caltrain Station - Townsend St |        9720
+ SF-E29-2   | Market St at Steuart St                      |        8409
+ SF-G27     | Powell St BART North                         |        7665
+ SF-J23-1   | Market St at 10th St                         |        6879
+ SF-P30     | 22nd St Caltrain Station                     |        6063
+(5 rows)
+
+Time: 47.004 ms
+
+Stations at Risk (empty_soon or full_soon):
+ risk_status | station_count | avg_capacity | avg_predicted 
+-------------+---------------+--------------+---------------
+ empty_soon  |             1 |           18 |           2.0
+ full_soon   |             1 |           25 |          22.0
+ balanced    |             4 |           22 |          11.0
+(3 rows)
+
+Time: 0.589 ms
+
+Average Trip Duration by Rideable Type:
+ rideable_type | trip_count | avg_duration_minutes | min_duration_minutes | max_duration_minutes 
+---------------+------------+----------------------+----------------------+----------------------
+ electric_bike |     333107 |                 12.6 |                  0.0 |                504.9
+ classic_bike  |      93792 |                 14.7 |                  1.0 |               1474.9
+(2 rows)
+
+Time: 128.521 ms
+
+───────────────────────────────────────────────────────────────────────
+5. INDEX VERIFICATION
+───────────────────────────────────────────────────────────────────────
+
+Current Indexes in Database:
+ schemaname |        tablename        |          indexname           |                                                                   indexdef                                                                    
+------------+-------------------------+------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------
+ public     | forecast_station_status | forecast_station_status_pkey | CREATE UNIQUE INDEX forecast_station_status_pkey ON public.forecast_station_status USING btree (station_id, forecast_ts)
+ public     | rebalancing_jobs        | rebalancing_jobs_pkey        | CREATE UNIQUE INDEX rebalancing_jobs_pkey ON public.rebalancing_jobs USING btree (job_id)
+ public     | spatial_ref_sys         | spatial_ref_sys_pkey         | CREATE UNIQUE INDEX spatial_ref_sys_pkey ON public.spatial_ref_sys USING btree (srid)
+ public     | station                 | station_pkey                 | CREATE UNIQUE INDEX station_pkey ON public.station USING btree (station_id)
+ public     | station_15min_demand    | station_15min_demand_pkey    | CREATE UNIQUE INDEX station_15min_demand_pkey ON public.station_15min_demand USING btree (station_id, day_of_week, hour_of_day, quarter_hour)
+ public     | station_inventory       | station_inventory_pkey       | CREATE UNIQUE INDEX station_inventory_pkey ON public.station_inventory USING btree (station_id)
+ public     | suggestion_candidates   | suggestion_candidates_pkey   | CREATE UNIQUE INDEX suggestion_candidates_pkey ON public.suggestion_candidates USING btree (suggestion_id)
+ public     | trip_history            | idx_trip_end_station         | CREATE INDEX idx_trip_end_station ON public.trip_history USING btree (end_station_id)
+ public     | trip_history            | idx_trip_start_station       | CREATE INDEX idx_trip_start_station ON public.trip_history USING btree (start_station_id)
+ public     | trip_history            | idx_trip_started_at          | CREATE INDEX idx_trip_started_at ON public.trip_history USING btree (started_at)
+ public     | trip_history            | trip_history_pkey            | CREATE UNIQUE INDEX trip_history_pkey ON public.trip_history USING btree (ride_id)
+(11 rows)
+
+Time: 1.507 ms
+
+Index Usage Statistics:
+psql:db/sql/verify_system.sql:314: ERROR:  column "tablename" does not exist
+LINE 3:     tablename,
+            ^
+Time: 0.230 ms
+
+───────────────────────────────────────────────────────────────────────
+6. QUERY PERFORMANCE COMPARISON (Before/After Indexing)
+───────────────────────────────────────────────────────────────────────
+
+Test Query 1: Find trips for a specific station
+─────────────────────────────────────────────────────────────────────
+Query: SELECT * FROM trip_history WHERE start_station_id = 123 LIMIT 100;
+
+EXPLAIN ANALYZE Output:
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=10.25..285.83 rows=100 width=67) (actual time=0.020..0.050 rows=38.00 loops=1)
+   Buffers: shared hit=36
+   InitPlan 1
+     ->  Limit  (cost=0.00..0.03 rows=1 width=7) (actual time=0.003..0.003 rows=1.00 loops=1)
+           Buffers: shared hit=2
+           ->  Seq Scan on station  (cost=0.00..19.95 rows=595 width=7) (actual time=0.003..0.003 rows=1.00 loops=1)
+                 Buffers: shared hit=2
+   ->  Bitmap Heap Scan on trip_history  (cost=10.22..2071.55 rows=748 width=67) (actual time=0.019..0.047 rows=38.00 loops=1)
+         Recheck Cond: ((start_station_id)::text = ((InitPlan 1).col1)::text)
+         Heap Blocks: exact=31
+         Buffers: shared hit=36
+         ->  Bitmap Index Scan on idx_trip_start_station  (cost=0.00..10.03 rows=748 width=0) (actual time=0.013..0.013 rows=38.00 loops=1)
+               Index Cond: ((start_station_id)::text = ((InitPlan 1).col1)::text)
+               Index Searches: 1
+               Buffers: shared hit=5
+ Planning Time: 0.047 ms
+ Execution Time: 0.064 ms
+(17 rows)
+
+Time: 0.294 ms
+
+
+Test Query 2: Find trips within a time range
+─────────────────────────────────────────────────────────────────────
+Query: SELECT * FROM trip_history WHERE started_at BETWEEN ... LIMIT 100;
+
+EXPLAIN ANALYZE Output:
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.43..8.45 rows=1 width=67) (actual time=0.007..0.007 rows=0.00 loops=1)
+   Buffers: shared hit=6
+   ->  Index Scan using idx_trip_started_at on trip_history  (cost=0.43..8.45 rows=1 width=67) (actual time=0.007..0.007 rows=0.00 loops=1)
+         Index Cond: ((started_at >= (now() - '30 days'::interval)) AND (started_at <= now()))
+         Index Searches: 1
+         Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=18
+ Planning Time: 0.052 ms
+ Execution Time: 0.013 ms
+(10 rows)
+
+Time: 0.250 ms
+
+
+Test Query 3: Aggregate demand by station (uses indexes on joins)
+─────────────────────────────────────────────────────────────────────
+Query: Join station_15min_demand with station
+
+EXPLAIN ANALYZE Output:
+                                                                            QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3907.48..3907.61 rows=10 width=63) (actual time=20.091..20.096 rows=10.00 loops=1)
+   Buffers: shared hit=3255
+   ->  HashAggregate  (cost=3907.48..3914.92 rows=595 width=63) (actual time=20.090..20.095 rows=10.00 loops=1)
+         Group Key: s.station_name
+         Batches: 1  Memory Usage: 353kB
+         Buffers: shared hit=3255
+         ->  Hash Join  (cost=1729.84..3706.55 rows=26791 width=27) (actual time=5.541..14.945 rows=27401.00 loops=1)
+               Hash Cond: ((d.station_id)::text = (s.station_id)::text)
+               Buffers: shared hit=3255
+               ->  Bitmap Heap Scan on station_15min_demand d  (cost=1702.45..3608.34 rows=26791 width=11) (actual time=5.394..8.617 rows=27401.00 loops=1)
+                     Recheck Cond: (day_of_week = 1)
+                     Heap Blocks: exact=1571
+                     Buffers: shared hit=3241
+                     ->  Bitmap Index Scan on station_15min_demand_pkey  (cost=0.00..1695.75 rows=26791 width=0) (actual time=5.237..5.237 rows=27401.00 loops=1)
+                           Index Cond: (day_of_week = 1)
+                           Index Searches: 307
+                           Buffers: shared hit=1670
+               ->  Hash  (cost=19.95..19.95 rows=595 width=30) (actual time=0.144..0.145 rows=595.00 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 45kB
+                     Buffers: shared hit=14
+                     ->  Seq Scan on station s  (cost=0.00..19.95 rows=595 width=30) (actual time=0.003..0.061 rows=595.00 loops=1)
+                           Buffers: shared hit=14
+ Planning:
+   Buffers: shared hit=14
+ Planning Time: 0.137 ms
+ Execution Time: 20.122 ms
+(26 rows)
+
+Time: 20.481 ms
+
+
+Test Query 4: Spatial query (nearest stations using PostGIS index)
+─────────────────────────────────────────────────────────────────────
+Query: Find 5 nearest stations to a point using ST_Distance
+
+EXPLAIN ANALYZE Output:
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=401.71..467.41 rows=5 width=46) (actual time=7.616..7.624 rows=5.00 loops=1)
+   Buffers: shared hit=103
+   ->  Result  (cost=401.71..8220.01 rows=595 width=46) (actual time=7.615..7.623 rows=5.00 loops=1)
+         Buffers: shared hit=103
+         ->  Sort  (cost=401.71..403.20 rows=595 width=70) (actual time=0.253..0.255 rows=5.00 loops=1)
+               Sort Key: ((geom <-> '0101000020E610000050FC1873D79A5EC0D0D556EC2FE34240'::geometry))
+               Sort Method: top-N heapsort  Memory: 26kB
+               Buffers: shared hit=17
+               ->  Seq Scan on station  (cost=0.00..391.82 rows=595 width=70) (actual time=0.008..0.171 rows=595.00 loops=1)
+                     Filter: (geom IS NOT NULL)
+                     Buffers: shared hit=14
+ Planning:
+   Buffers: shared hit=13
+ Planning Time: 0.136 ms
+ Execution Time: 7.654 ms
+(15 rows)
+
+Time: 8.167 ms
+
+
+Test Query 5: Complex forecast query with multiple joins
+─────────────────────────────────────────────────────────────────────
+Query: Latest forecast with station info and inventory
+
+EXPLAIN ANALYZE Output:
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=30.81..46.86 rows=1 width=185) (actual time=0.024..0.033 rows=6.00 loops=1)
+   Buffers: shared hit=21
+   InitPlan 1
+     ->  Aggregate  (cost=15.25..15.26 rows=1 width=8) (actual time=0.004..0.004 rows=1.00 loops=1)
+           Buffers: shared hit=1
+           ->  Seq Scan on forecast_station_status  (cost=0.00..14.20 rows=420 width=8) (actual time=0.001..0.001 rows=6.00 loops=1)
+                 Buffers: shared hit=1
+   ->  Nested Loop  (cost=15.55..31.60 rows=1 width=185) (actual time=0.024..0.032 rows=6.00 loops=1)
+         Join Filter: ((f.station_id)::text = (s.station_id)::text)
+         Buffers: shared hit=21
+         ->  Hash Join  (cost=15.28..30.59 rows=2 width=308) (actual time=0.019..0.021 rows=6.00 loops=1)
+               Hash Cond: ((si.station_id)::text = (f.station_id)::text)
+               Buffers: shared hit=3
+               ->  Seq Scan on station_inventory si  (cost=0.00..14.20 rows=420 width=154) (actual time=0.003..0.004 rows=6.00 loops=1)
+                     Buffers: shared hit=1
+               ->  Hash  (cost=15.25..15.25 rows=2 width=154) (actual time=0.012..0.013 rows=6.00 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=2
+                     ->  Seq Scan on forecast_station_status f  (cost=0.00..15.25 rows=2 width=154) (actual time=0.008..0.009 rows=6.00 loops=1)
+                           Filter: (forecast_ts = (InitPlan 1).col1)
+                           Buffers: shared hit=2
+         ->  Index Scan using station_pkey on station s  (cost=0.28..0.49 rows=1 width=30) (actual time=0.001..0.001 rows=1.00 loops=6)
+               Index Cond: ((station_id)::text = (si.station_id)::text)
+               Index Searches: 6
+               Buffers: shared hit=18
+ Planning Time: 0.188 ms
+ Execution Time: 0.057 ms
+(27 rows)
+
+Time: 0.457 ms
+
+───────────────────────────────────────────────────────────────────────
+7. PERFORMANCE METRICS SUMMARY
+───────────────────────────────────────────────────────────────────────
+
+Key Performance Indicators:
+       metric        |  value  
+---------------------+---------
+ Total Database Size | 121 MB
+ Total Index Size    | 49 MB
+ Cache Hit Ratio     | 100.00%
+ Active Connections  | 5
+(4 rows)
+
+Time: 3.268 ms
+
+Table Sizes (with indexes):
+        tablename        | total_size | table_size | indexes_size 
+-------------------------+------------+------------+--------------
+ trip_history            | 82 MB      | 43 MB      | 40 MB
+ station_15min_demand    | 21 MB      | 12 MB      | 9344 kB
+ spatial_ref_sys         | 7144 kB    | 6896 kB    | 248 kB
+ station                 | 208 kB     | 112 kB     | 96 kB
+ rebalancing_jobs        | 32 kB      | 8192 bytes | 24 kB
+ forecast_station_status | 24 kB      | 8192 bytes | 16 kB
+ station_inventory       | 24 kB      | 8192 bytes | 16 kB
+ suggestion_candidates   | 8192 bytes | 0 bytes    | 8192 bytes
+(8 rows)
+
+Time: 0.854 ms
+
+───────────────────────────────────────────────────────────────────────
+8. INDEX IMPACT COMPARISON
+───────────────────────────────────────────────────────────────────────
+
+Cost Comparison: Indexed vs Sequential Scan
+
+Sequential Scan Cost (simulated without index hint):
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Index Scan using trip_history_pkey on trip_history  (cost=0.42..8.44 rows=1 width=67)
+   Index Cond: ((ride_id)::text = 'test_ride_id_123'::text)
+(2 rows)
+
+Time: 0.168 ms
+
+Index Scan Cost (with primary key index):
+                                                 QUERY PLAN                                                 
+------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=0.45..8.48 rows=1 width=67)
+   ->  HashAggregate  (cost=0.03..0.04 rows=1 width=17)
+         Group Key: ("ANY_subquery".ride_id)::text
+         ->  Subquery Scan on "ANY_subquery"  (cost=0.00..0.02 rows=1 width=17)
+               ->  Limit  (cost=0.00..0.02 rows=1 width=17)
+                     ->  Seq Scan on trip_history trip_history_1  (cost=0.00..9750.99 rows=426899 width=17)
+   ->  Index Scan using trip_history_pkey on trip_history  (cost=0.42..8.44 rows=1 width=67)
+         Index Cond: ((ride_id)::text = ("ANY_subquery".ride_id)::text)
+(8 rows)
+
+Time: 0.265 ms
+
+───────────────────────────────────────────────────────────────────────
+9. SYSTEM HEALTH CHECK
+───────────────────────────────────────────────────────────────────────
+
+Dead Tuples (candidates for VACUUM):
+psql:db/sql/verify_system.sql:481: ERROR:  column "tablename" does not exist
+LINE 3:     tablename,
+            ^
+Time: 0.170 ms
+
+Long Running Queries (if any):
+ pid | usename | application_name | state | runtime_seconds | query_preview 
+-----+---------+------------------+-------+-----------------+---------------
+(0 rows)
+
+Time: 0.562 ms
+
+═══════════════════════════════════════════════════════════════════════
+                    VERIFICATION COMPLETE                               
+═══════════════════════════════════════════════════════════════════════
+
+Summary:
+  ✓ Data integrity checks completed
+  ✓ Sample data outputs generated
+  ✓ Analytical queries executed
+  ✓ Index verification performed
+  ✓ Query performance analysis completed
+
+Notes for Screenshot:
+  - Look for ✓ PASS indicators in integrity checks
+  - Compare "Planning Time" and "Execution Time" in EXPLAIN outputs
+  - Check "Index Scan" vs "Seq Scan" in query plans
+  - Note the "cost=" values (lower is better)
+
+Indexing Impact:
+  - Indexed queries should show "Index Scan" or "Index Only Scan"
+  - Sequential scans show "Seq Scan" (slower for large tables)
+  - Costs without indexes are typically 10-100x higher
+

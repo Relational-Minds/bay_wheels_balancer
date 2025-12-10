@@ -2,7 +2,7 @@
 Load Bay Wheels CSV trip files into Postgres.
 
 Usage:
-  python scripts/load_trips.py --db postgresql://user:pass@localhost:5432/baywheels --data-dir data/ --batch-size 1000
+    python db/load_trips.py --db postgresql://user:pass@localhost:5432/baywheels --data-dir db/data/ --batch-size 1000
 
 This script:
 - Reads CSV files from `data_dir` (non-recursive)
@@ -201,7 +201,7 @@ def main():
     engine = create_engine(db_url)
 
     # Read other configuration from env (no CLI args per project preference)
-    data_dir = os.environ.get('DATA_DIR', 'data')
+    data_dir = os.environ.get('DATA_DIR', 'db/data')
     batch_size = int(os.environ.get('BATCH_SIZE', '1000'))
 
     files = sorted(glob.glob(os.path.join(data_dir, "*.csv")))
