@@ -1,0 +1,8 @@
+# Requirements for Person A (data ingestion, aggregation, forecasting)
+# Conservative, compatible ranges for Python 3.11 and Postgres 16.
+# Install with: pip install -r requirements.txt
+
+SQLAlchemy>=1.4,<3.0
+psycopg2-binary>=2.9,<3.0
+python-dotenv>=0.21,<1.0
+python-dateutil>=2.8,<3.0
